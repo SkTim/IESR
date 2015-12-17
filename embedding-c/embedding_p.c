@@ -99,8 +99,9 @@ void InitVectors() {
 
 void GetMatrix(FILE *fin) {
 	char ch[20] = {}, ch1[20] = {}, ch2[20] = {};
-	int a = 0, b = 0, i, l;
+	int a = 0, b = 0, i, l, line_id, column_id;
 	char line[100];
+	real value;
 	while (!feof(fin)) {
 		fgets(line, 100, fin);
 		strcpy(lines[lines_num], line);
@@ -148,7 +149,7 @@ void GetMatrix(FILE *fin) {
 
 void *COMF(void *id) {
 	int a = 0, b = 0, matrix_id = 0, l, i, j, line_id, column_id, iter = 0, l1, l2, p_num, e_num;
-	real value, g, test, ppmi_num = 0, esa_num = 0, min_rate = rate / 100;
+	real value, g, test, ppmi_num = 0, esa_num = 0, min_rate = rate / 10;
 	real *neu1e = (real *)calloc(layer1_size, sizeof(real));
 	unsigned long long next_random = (long long)id;
 	int t_id = (int)id, start = group * t_id + 1, end;
@@ -236,7 +237,7 @@ void *COMF(void *id) {
 				f = 0;
 				if (i != 0) {
 					next_random = next_random * (unsigned long long)25214903917 + 11;
-					column_id = esa_table[(next_random >> 16) % table_size];
+					column_id = article_table[(next_random >> 16) % table_size];
 					if (column_id == 0) column_id = next_random % (esa_size - 1) + 1;
 					l2 = column_id * layer1_size;
 					value = 0;
@@ -286,7 +287,7 @@ void main(int argc, char **argv) {
 	fp = fopen(train_file,"r");
 	layer1_size = 1000;
 	rate = 0.025;
-	iter_num = 25;
+	iter_num = 4;
 	printf("GetMatrix Begin\n");
 	GetMatrix(fp);
 	printf("TrainModel Begin\n");
