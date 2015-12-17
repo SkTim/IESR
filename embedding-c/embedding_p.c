@@ -51,7 +51,7 @@ void InitUnigramTable() {
 			i++;
 			d1 += pow(vocab[i], power) / train_words_pow;
 		}
-		if (i > vocab_size) i = vocab_size - 1;
+		if (i >= vocab_size) i = vocab_size - 1;
 	}
 	i = 0;
 	d2 = pow(article[i], power) / train_articles_pow;
@@ -61,7 +61,7 @@ void InitUnigramTable() {
 			i++;
 			d2 += pow(article[i], power) / train_articles_pow;
 		}
-		if (i > esa_size) i = esa_size - 1;
+		if (i >= esa_size) i = esa_size - 1;
 	}
 }
 
@@ -99,7 +99,7 @@ void InitVectors() {
 
 void GetMatrix(FILE *fin) {
 	char ch[20] = {}, ch1[20] = {}, ch2[20] = {};
-	int a = 0, b = 0, i;
+	int a = 0, b = 0, i, l;
 	char line[100];
 	while (!feof(fin)) {
 		fgets(line, 100, fin);
@@ -121,6 +121,28 @@ void GetMatrix(FILE *fin) {
 	pmi_size = atoi(ch1);
 	esa_size = atoi(ch2);
 	InitVectors();
+	for (l = 0; l < lines_num; l++) {
+		char s1[10] = {}, s2[10] = {}, v[10] = {};
+		a = 0;
+		b = 0;
+		for (i = 1; i < strlen(lines[l]); i++) {
+			if (lines[l][i] == '\n') break;
+			if (lines[l][i] == ' ') {
+				a += 1;
+				b = i + 1;
+				continue;
+			}
+			if (a == 0) s1[i - 1] = lines[l][i];
+			if (a == 1) s2[i - b] = lines[l][i];
+			if (a == 2) v[i - b] = lines[l][i];
+		}
+		line_id = atoi(s1);
+		column_id = atoi(s2);
+		value = atof(v);
+		if (lines[l][0] == 'P') vocab[line_id] += 1;
+		if (lines[l][0] == 'E') article[column_id] += 1;
+	}
+	InitUnigramTable();
 	printf("%lld %lld %lld\n", vocab_size, pmi_size, esa_size);
 }
 
@@ -141,11 +163,11 @@ void *COMF(void *id) {
 	esa_num = line_num - ppmi_num;
 	ppmi_num *= (real)iter_num;
 	esa_num *= (real)iter_num;
-	p_num = 0;
-	e_num = 0;
-	while (iter < iter_num + 1) {
-		//p_num = 0;
-		//e_num = 0;
+	//p_num = 0;
+	//e_num = 0;
+	while (iter < iter_num) {
+		p_num = 0;
+		e_num = 0;
 		for (l = start; l < end; l++) {
 			
 			/*
@@ -154,8 +176,7 @@ void *COMF(void *id) {
 				if (rate_table1[t_id] < min_rate) rate_table1[t_id] = rate / 10;
 			}
 			*/
-			
-			char s1[10] = {}, s2[10] = {}, v[10] = {};
+
 			if (lines[l][0] == 'P') {
 				matrix_id = 0;
 				p_num += 1;
@@ -172,6 +193,7 @@ void *COMF(void *id) {
 					if (rate_table2[t_id] < min_rate) rate_table2[t_id] = min_rate;
 				}
 			}
+			char s1[10] = {}, s2[10] = {}, v[10] = {};
 			a = 0;
 			b = 0;
 			for (i = 1; i < strlen(lines[l]); i++) {
@@ -196,7 +218,8 @@ void *COMF(void *id) {
 				f = 0;
 				if (i != 0) {
 					next_random = next_random * (unsigned long long)25214903917 + 11;
-					column_id = (next_random >> 16) % pmi_size;
+					column_id = vocab_table[(next_random >> 16) % table_size];
+					if (column_id == 0) column_id = next_random % (vocab_size - 1) + 1;
 					l2 = column_id * layer1_size;
 					value = 0;
 				}
@@ -213,7 +236,8 @@ void *COMF(void *id) {
 				f = 0;
 				if (i != 0) {
 					next_random = next_random * (unsigned long long)25214903917 + 11;
-					column_id = (next_random >> 16) % esa_size;
+					column_id = esa_table[(next_random >> 16) % table_size];
+					if (column_id == 0) column_id = next_random % (esa_size - 1) + 1;
 					l2 = column_id * layer1_size;
 					value = 0;
 				}
