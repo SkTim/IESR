@@ -13,11 +13,11 @@
 
 typedef float real;
 
-int num_threads = 10, lines_num = 0, negative1 = 1, negative2 = 0, group, iter_num;
+int num_threads = 8, lines_num = 0, negative1 = 1, negative2 = 0, group, iter_num;
 long long vocab_size, layer1_size = 1000, pmi_size, esa_size;
 real *syn0, *syn1, *syn2, f, rate, *rate_table1, *rate_table2;
 char lines[500000000][80], train_file[40], output_file1[40], output_file2[40];
-int *vocab, *article, table;
+int *vocab, *article, *table;
 const int table_size = 1e8;
 
 void ReadWord(char *word, FILE *fin) {
@@ -151,11 +151,11 @@ void *COMF(void *id) {
 	esa_num = line_num - ppmi_num;
 	ppmi_num *= (real)iter_num;
 	esa_num *= (real)iter_num;
-	//p_num = 0;
-	//e_num = 0;
+	p_num = 0;
+	e_num = 0;
 	while (iter < iter_num) {
-		p_num = 0;
-		e_num = 0;
+		//p_num = 0;
+		//e_num = 0;
 		for (l = start; l < end; l++) {
 			
 			/*
@@ -206,8 +206,7 @@ void *COMF(void *id) {
 				f = 0;
 				if (i != 0) {
 					next_random = next_random * (unsigned long long)25214903917 + 11;
-					column_id = vocab_table[(next_random >> 16) % table_size];
-					if (column_id == 0) column_id = next_random % (vocab_size - 1) + 1;
+					column_id = (next_random >> 16) % vocab_size;
 					l2 = column_id * layer1_size;
 					value = 0;
 				}
@@ -267,9 +266,9 @@ void TrainModel() {
 void main(int argc, char **argv) {
 	printf("Main Begin\n");
 	FILE *fp;
-	strcpy(train_file, "../data/infoMatrix_1");
-	strcpy(output_file1, "../data/wordVectors_1");
-	strcpy(output_file2, "../data/articleVectors_1");
+	strcpy(train_file, "../data/infoMatrix_8_1");
+	strcpy(output_file1, "../data/wordVectors_8");
+	strcpy(output_file2, "../data/articleVectors_8");
 	fp = fopen(train_file,"r");
 	layer1_size = 1000;
 	rate = 0.025;
