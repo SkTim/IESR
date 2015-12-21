@@ -74,10 +74,10 @@ void InitVectors() {
     	next_random = next_random * (unsigned long long)25214903917 + 11;
     	syn0[a * layer1_size + b] = 10 * (((next_random & 0xFFFF) / (real)65536) - 0.5) / ((float)(layer1_size));
 	}
-	rate_table1 = (real *)calloc(num_threads, sizeof(real));
-	rate_table2 = (real *)calloc(num_threads, sizeof(real));
-	for (a = 0; a < num_threads; a++) rate_table1[a] = rate;
-	for (a = 0; a < num_threads; a++) rate_table2[a] = rate;
+	rate_table1 = (real *)calloc(vocab_size, sizeof(real));
+	rate_table2 = (real *)calloc(esa_size, sizeof(real));
+	for (a = 0; a < vocab_size; a++) rate_table1[a] = rate;
+	for (a = 0; a < esa_size; a++) rate_table2[a] = rate;
 	vocab = (int *)calloc(vocab_size, sizeof(int));
 	article = (int *)calloc(esa_size, sizeof(int));
 	for (a = 0; a < vocab_size; a++) vocab[a] = 0;
@@ -165,22 +165,6 @@ void *COMF(void *id) {
 			}
 			*/
 
-			if (lines[l][0] == 'P') {
-				matrix_id = 0;
-				p_num += 1;
-				if (p_num % 100 == 0 && rate_table1[t_id] > min_rate) {
-					rate_table1[t_id] = rate * (ppmi_num - (real)p_num) / ppmi_num;
-					if (rate_table1[t_id] < min_rate) rate_table1[t_id] = min_rate;
-				}
-			}
-			if (lines[l][0] == 'E') {
-				matrix_id = 1;
-				e_num += 1;
-				if (e_num % 100 == 0 && rate_table2[t_id] > min_rate) {
-					rate_table2[t_id] = rate * (esa_num - (real)e_num) / esa_num;
-					if (rate_table2[t_id] < min_rate) rate_table2[t_id] = min_rate;
-				}
-			}
 			char s1[10] = {}, s2[10] = {}, v[10] = {};
 			a = 0;
 			b = 0;
@@ -199,6 +183,16 @@ void *COMF(void *id) {
 			column_id = atoi(s2);
 			value = atof(v);
 			if (value == 0) continue;
+			if (lines[l][0] == 'P') {
+				matrix_id = 0;
+				rate_table1[line_id] = rate * (vocab[line_id] - 1.0) / vocab[line_id];
+				if (rate_table1[line_id] < min_rate) rate_table1[line_id] = min_rate;
+			}
+			if (lines[l][0] == 'E') {
+				matrix_id = 1;
+				rate_table2[column_id] = rate * (article[column_id] - 1.0) / esa_num;
+				if (rate_table2[column_id] < min_rate) rate_table2[column_id] = min_rate;
+			}
 			l1 = line_id * layer1_size;
 			l2 = column_id * layer1_size;
 			for (i = 0; i < layer1_size; i++) neu1e[i] = 0;
