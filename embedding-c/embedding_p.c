@@ -13,7 +13,7 @@
 
 typedef float real;
 
-int num_threads = 8, lines_num = 0, negative1 = 1, negative2 = 0, group, iter_num;
+int num_threads = 8, lines_num = 0, negative1 = 1, negative2 = 4, group, iter_num;
 long long vocab_size, layer1_size = 1000, pmi_size, esa_size;
 real *syn0, *syn1, *syn2, f, rate, *rate_table1, *rate_table2;
 char lines[500000000][80], train_file[40], output_file1[40], output_file2[40];
@@ -68,7 +68,7 @@ void InitVectors() {
     if (syn2 == NULL) {printf("Memory allocation failed\n"); exit(1);}
     for (a = 0; a < esa_size; a++) for (b = 0; b < layer1_size; b++) {
 		next_random = next_random * (unsigned long long)25214903917 + 11;
-    	syn2[a * layer1_size + b] = 0.1 * (((next_random & 0xFFFF) / (real)65536) - 0.5) / ((float)(layer1_size));
+    	syn2[a * layer1_size + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / ((float)(layer1_size));
 	}
     for (a = 0; a < vocab_size; a++) for (b = 0; b < layer1_size; b++) {
     	next_random = next_random * (unsigned long long)25214903917 + 11;
@@ -136,7 +136,7 @@ void GetMatrix(FILE *fin) {
 
 void *COMF(void *id) {
 	int a = 0, b = 0, matrix_id = 0, l, i, j, line_id, column_id, iter = 0, l1, l2, p_num, e_num;
-	real value, g, test, ppmi_num = 0, esa_num = 0, min_rate = rate / 10;
+	real value, g, test, ppmi_num = 0, esa_num = 0, min_rate = rate / 1000;
 	real *neu1e = (real *)calloc(layer1_size, sizeof(real));
 	unsigned long long next_random = (long long)id;
 	int t_id = (int)id, start = group * t_id + 1, end;
@@ -206,17 +206,17 @@ void *COMF(void *id) {
 				f = 0;
 				if (i != 0) {
 					next_random = next_random * (unsigned long long)25214903917 + 11;
-					column_id = (next_random >> 16) % vocab_size;
+					column_id = (next_random >> 16) % pmi_size;
 					l2 = column_id * layer1_size;
 					value = 0;
 				}
 				for (j = 0; j < layer1_size; j++) {
-					f += syn0[j + l1] * syn1[j + l2];
+					f += syn0[j + l1] * syn0[j + l2];
 				}
 				g = rate_table1[t_id] * (value - f);
 				for (j = 0; j < layer1_size; j++) {
-					neu1e[j] += g * syn1[j + l2];
-					syn1[j + l2] += g * syn0[j + l1];
+					neu1e[j] += g * syn0[j + l2];
+					syn0[j + l2] += g * syn0[j + l1];
 				}
 			}
 			if (matrix_id == 1) for (i = 0 ; i < negative2 + 1; i++) {
@@ -271,8 +271,8 @@ void main(int argc, char **argv) {
 	strcpy(output_file2, "../data/articleVectors_8");
 	fp = fopen(train_file,"r");
 	layer1_size = 1000;
-	rate = 0.025;
-	iter_num = 4;
+	rate = 0.005;
+	iter_num = 18;
 	printf("GetMatrix Begin\n");
 	GetMatrix(fp);
 	printf("TrainModel Begin\n");
