@@ -17,7 +17,7 @@ int num_threads = 10, lines_num = 0, negative1 = 1, negative2 = 0, group, iter_n
 long long vocab_size, layer1_size = 1000, pmi_size, esa_size;
 real *syn0, *syn1, *syn2, f, rate, *rate_table1, *rate_table2;
 char lines[500000000][80], train_file[40], output_file1[40], output_file2[40];
-int *vocab, *article, *vocab_table, *article_table;
+int *vocab, *article, table;
 const int table_size = 1e8;
 
 void ReadWord(char *word, FILE *fin) {
@@ -35,34 +35,21 @@ void ReadWord(char *word, FILE *fin) {
 }
 
 void InitUnigramTable() {
-	int a, i;
-	double train_words_pow = 0;
-	double train_articles_pow = 0;
-	double d1, d2, power = 0.75;
-	vocab_table = (int *)malloc(table_size * sizeof(int));
-	article_table = (int *)malloc(table_size * sizeof(int));
-	for (a = 0; a < vocab_size; a++) train_words_pow += pow(vocab[a], power);
-	for (a = 0; a < esa_size; a++) train_articles_pow += pow(article[a], power);
-	i = 0;
-	d1 = pow(vocab[i], power) / train_words_pow;
-	for (a = 0; a < table_size; a++) {
-		vocab_table[a] = i;
-		if (a / (double)table_size > d1) {
-			i++;
-			d1 += pow(vocab[i], power) / train_words_pow;
-		}
-		if (i >= vocab_size) i = vocab_size - 1;
-	}
-	i = 0;
-	d2 = pow(article[i], power) / train_articles_pow;
-	for (a = 0; a < table_size; a++) {
-		article_table[a] = i;
-		if (a / (double)table_size > d2) {
-			i++;
-			d2 += pow(article[i], power) / train_articles_pow;
-		}
-		if (i >= esa_size) i = esa_size - 1;
-	}
+  int a, i;
+  double train_words_pow = 0;
+  double d1, power = 0.75;
+  table = (int *)malloc(table_size * sizeof(int));
+  for (a = 0; a < vocab_size; a++) train_words_pow += pow(vocab[a], power);
+  i = 0;
+  d1 = pow(vocab[i], power) / train_words_pow;
+  for (a = 0; a < table_size; a++) {
+    table[a] = i;
+    if (a / (double)table_size > d1) {
+      i++;
+      d1 += pow(vocab[i], power) / train_words_pow;
+    }
+    if (i >= vocab_size) i = vocab_size - 1;
+  }
 }
 
 void InitVectors() {
@@ -237,8 +224,7 @@ void *COMF(void *id) {
 				f = 0;
 				if (i != 0) {
 					next_random = next_random * (unsigned long long)25214903917 + 11;
-					column_id = article_table[(next_random >> 16) % table_size];
-					if (column_id == 0) column_id = next_random % (esa_size - 1) + 1;
+					column_id = (next_random >> 16) % esa_size;
 					l2 = column_id * layer1_size;
 					value = 0;
 				}
