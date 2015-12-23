@@ -185,12 +185,12 @@ void *COMF(void *id) {
 			if (value == 0) continue;
 			if (lines[l][0] == 'P') {
 				matrix_id = 0;
-				rate_table1[line_id] = rate * (vocab[line_id] - 1.0) / vocab[line_id];
+				rate_table1[line_id] -= rate / vocab[line_id];
 				if (rate_table1[line_id] < min_rate) rate_table1[line_id] = min_rate;
 			}
 			if (lines[l][0] == 'E') {
 				matrix_id = 1;
-				rate_table2[column_id] = rate * (article[column_id] - 1.0) / esa_num;
+				rate_table2[column_id] -= rate / article[column_id];
 				if (rate_table2[column_id] < min_rate) rate_table2[column_id] = min_rate;
 			}
 			l1 = line_id * layer1_size;
