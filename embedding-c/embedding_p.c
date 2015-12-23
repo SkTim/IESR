@@ -13,7 +13,7 @@
 
 typedef float real;
 
-int num_threads = 8, lines_num = 0, negative1 = 1, negative2 = 4, group, iter_num;
+int num_threads = 8, lines_num = 0, negative1 = 10, negative2 = 4, group, iter_num;
 long long vocab_size, layer1_size = 1000, pmi_size, esa_size;
 real *syn0, *syn1, *syn2, f, rate, *rate_table1, *rate_table2;
 char lines[500000000][80], train_file[40], output_file1[40], output_file2[40];
@@ -74,10 +74,10 @@ void InitVectors() {
     	next_random = next_random * (unsigned long long)25214903917 + 11;
     	syn0[a * layer1_size + b] = 10 * (((next_random & 0xFFFF) / (real)65536) - 0.5) / ((float)(layer1_size));
 	}
-	rate_table1 = (real *)calloc(vocab_size, sizeof(real));
-	rate_table2 = (real *)calloc(esa_size, sizeof(real));
-	for (a = 0; a < vocab_size; a++) rate_table1[a] = rate;
-	for (a = 0; a < esa_size; a++) rate_table2[a] = rate;
+	rate_table1 = (real *)calloc(num_threads, sizeof(real));
+	rate_table2 = (real *)calloc(num_threads, sizeof(real));
+	for (a = 0; a < num_threads; a++) rate_table1[a] = rate;
+	for (a = 0; a < num_threads; a++) rate_table2[a] = rate;
 	vocab = (int *)calloc(vocab_size, sizeof(int));
 	article = (int *)calloc(esa_size, sizeof(int));
 	for (a = 0; a < vocab_size; a++) vocab[a] = 0;
@@ -130,13 +130,13 @@ void GetMatrix(FILE *fin) {
 		if (lines[l][0] == 'P') vocab[line_id] += 1;
 		if (lines[l][0] == 'E') article[column_id] += 1;
 	}
-	InitUnigramTable();
+	//InitUnigramTable();
 	printf("%lld %lld %lld\n", vocab_size, pmi_size, esa_size);
 }
 
 void *COMF(void *id) {
 	int a = 0, b = 0, matrix_id = 0, l, i, j, line_id, column_id, iter = 0, l1, l2, p_num, e_num;
-	real value, g, test, ppmi_num = 0, esa_num = 0, min_rate = rate / 1000;
+	real value, g, test, ppmi_num = 0, esa_num = 0, min_rate = rate / 10;
 	real *neu1e = (real *)calloc(layer1_size, sizeof(real));
 	unsigned long long next_random = (long long)id;
 	int t_id = (int)id, start = group * t_id + 1, end;
@@ -165,6 +165,22 @@ void *COMF(void *id) {
 			}
 			*/
 
+			if (lines[l][0] == 'P') {
+				matrix_id = 0;
+				p_num += 1;
+				if (p_num % 100 == 0 && rate_table1[t_id] > min_rate) {
+					rate_table1[t_id] = rate * (ppmi_num - (real)p_num) / ppmi_num;
+					if (rate_table1[t_id] < min_rate) rate_table1[t_id] = min_rate;
+				}
+			}
+			if (lines[l][0] == 'E') {
+				matrix_id = 1;
+				e_num += 1;
+				if (e_num % 100 == 0 && rate_table2[t_id] > min_rate) {
+					rate_table2[t_id] = rate * (esa_num - (real)e_num) / esa_num;
+					if (rate_table2[t_id] < min_rate) rate_table2[t_id] = min_rate;
+				}
+			}
 			char s1[10] = {}, s2[10] = {}, v[10] = {};
 			a = 0;
 			b = 0;
@@ -183,16 +199,6 @@ void *COMF(void *id) {
 			column_id = atoi(s2);
 			value = atof(v);
 			if (value == 0) continue;
-			if (lines[l][0] == 'P') {
-				matrix_id = 0;
-				rate_table1[line_id] = rate * (vocab[line_id] - 1.0) / vocab[line_id];
-				if (rate_table1[line_id] < min_rate) rate_table1[line_id] = min_rate;
-			}
-			if (lines[l][0] == 'E') {
-				matrix_id = 1;
-				rate_table2[column_id] = rate * (article[column_id] - 1.0) / esa_num;
-				if (rate_table2[column_id] < min_rate) rate_table2[column_id] = min_rate;
-			}
 			l1 = line_id * layer1_size;
 			l2 = column_id * layer1_size;
 			for (i = 0; i < layer1_size; i++) neu1e[i] = 0;
@@ -264,9 +270,9 @@ void main(int argc, char **argv) {
 	strcpy(output_file1, "../data/wordVectors_8");
 	strcpy(output_file2, "../data/articleVectors_8");
 	fp = fopen(train_file,"r");
-	layer1_size = 1000;
-	rate = 0.025;
-	iter_num = 8;
+	layer1_size = 800;
+	rate = 0.005;
+	iter_num = 5;
 	printf("GetMatrix Begin\n");
 	GetMatrix(fp);
 	printf("TrainModel Begin\n");
