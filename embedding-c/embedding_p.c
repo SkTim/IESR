@@ -13,7 +13,7 @@
 
 typedef float real;
 
-int num_threads = 10, lines_num = 0, negative1 = 1, negative2 = 0, group, iter_num;
+int num_threads = 10, lines_num = 0, negative1 = 1, negative2 = 4, group, iter_num;
 long long vocab_size, layer1_size = 1000, pmi_size, esa_size;
 real *syn0, *syn1, *syn2, f, rate, *rate_table1, *rate_table2;
 char lines[500000000][80], train_file[40], output_file1[40], output_file2[40];
@@ -81,7 +81,7 @@ void InitVectors() {
     if (syn2 == NULL) {printf("Memory allocation failed\n"); exit(1);}
     for (a = 0; a < esa_size; a++) for (b = 0; b < layer1_size; b++) {
 		next_random = next_random * (unsigned long long)25214903917 + 11;
-    	syn2[a * layer1_size + b] = 0.1 * (((next_random & 0xFFFF) / (real)65536) - 0.5) / ((float)(layer1_size));
+    	syn2[a * layer1_size + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / ((float)(layer1_size));
 	}
     for (a = 0; a < vocab_size; a++) for (b = 0; b < layer1_size; b++) {
     	next_random = next_random * (unsigned long long)25214903917 + 11;
@@ -126,7 +126,7 @@ void GetMatrix(FILE *fin) {
 
 void *COMF(void *id) {
 	int a = 0, b = 0, matrix_id = 0, l, i, j, line_id, column_id, iter = 0, l1, l2, p_num, e_num;
-	real value, g, test, ppmi_num = 0, esa_num = 0, min_rate = rate / 100;
+	real value, g, test, ppmi_num = 0, esa_num = 0, min_rate = rate / 1000;
 	real *neu1e = (real *)calloc(layer1_size, sizeof(real));
 	unsigned long long next_random = (long long)id;
 	int t_id = (int)id, start = group * t_id + 1, end;
@@ -143,7 +143,7 @@ void *COMF(void *id) {
 	esa_num *= (real)iter_num;
 	p_num = 0;
 	e_num = 0;
-	while (iter < iter_num + 1) {
+	while (iter < iter_num) {
 		//p_num = 0;
 		//e_num = 0;
 		for (l = start; l < end; l++) {
@@ -256,13 +256,13 @@ void TrainModel() {
 void main(int argc, char **argv) {
 	printf("Main Begin\n");
 	FILE *fp;
-	strcpy(train_file, "../data/infoMatrix_1");
-	strcpy(output_file1, "../data/wordVectors_1");
-	strcpy(output_file2, "../data/articleVectors_1");
+	strcpy(train_file, "../data/infoMatrix_8_1");
+	strcpy(output_file1, "../data/wordVectors_8");
+	strcpy(output_file2, "../data/articleVectors_8");
 	fp = fopen(train_file,"r");
 	layer1_size = 1000;
 	rate = 0.025;
-	iter_num = 25;
+	iter_num = 10;
 	printf("GetMatrix Begin\n");
 	GetMatrix(fp);
 	printf("TrainModel Begin\n");
