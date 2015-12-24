@@ -270,9 +270,9 @@ void main(int argc, char **argv) {
 	strcpy(output_file1, "../data/wordVectors_8");
 	strcpy(output_file2, "../data/articleVectors_8");
 	fp = fopen(train_file,"r");
-	layer1_size = 800;
-	rate = 0.005;
-	iter_num = 5;
+	layer1_size = 1000;
+	rate = 0.004;
+	iter_num = 6;
 	printf("GetMatrix Begin\n");
 	GetMatrix(fp);
 	printf("TrainModel Begin\n");
