@@ -140,29 +140,6 @@ void GetMatrix(FILE *fin) {
 	pmi_size = atoi(ch1);
 	esa_size = atoi(ch2);
 	InitVectors();
-    /*
-	for (l = 0; l < lines_num; l++) {
-		char s1[10] = {}, s2[10] = {}, v[10] = {};
-		a = 0;
-		b = 0;
-		for (i = 1; i < strlen(lines[l]); i++) {
-			if (lines[l][i] == '\n') break;
-			if (lines[l][i] == ' ') {
-				a += 1;
-				b = i + 1;
-				continue;
-			}
-			if (a == 0) s1[i - 1] = lines[l][i];
-			if (a == 1) s2[i - b] = lines[l][i];
-			if (a == 2) v[i - b] = lines[l][i];
-		}
-		line_id = atoi(s1);
-		column_id = atoi(s2);
-		value = atof(v);
-		if (lines[l][0] == 'P') vocab[line_id] += 1;
-		if (lines[l][0] == 'E') article[column_id] += 1;
-	}
-    */
 	printf("%lld %lld %lld\n", vocab_size, pmi_size, esa_size);
 }
 
