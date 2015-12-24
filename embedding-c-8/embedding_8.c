@@ -13,7 +13,7 @@
 
 typedef float real;
 
-int num_threads = 8, lines_num = 0, negative1 = 1, negative2 = 4, group, iter_num;
+int num_threads = 8, lines_num = 0, negative1 = 1, negative2 = 10, group, iter_num;
 long long vocab_size, layer1_size = 1000, pmi_size, esa_size;
 real *syn0, *syn1, *syn2, f, rate, *rate_table1, *rate_table2;
 char lines[500000000][80], train_file[40], output_file1[40], output_file2[40];
@@ -280,8 +280,8 @@ void main(int argc, char **argv) {
 	strcpy(output_file2, "../data/articleVectors_8");
 	fp = fopen(train_file,"r");
 	layer1_size = 1000;
-	rate = 0.01;
-	iter_num = 8;
+	rate = 0.005;
+	iter_num = 15;
 	printf("GetMatrix Begin\n");
 	GetMatrix(fp);
 	printf("TrainModel Begin\n");
