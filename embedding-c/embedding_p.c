@@ -336,7 +336,7 @@ void main(int argc, char **argv) {
     GetVocab(f_vocab);
     printf("GetArticle Begin\n");
     GetArticle(f_article);
-    print("InitUnigramTable\n");
+    printf("InitUnigramTable\n");
     InitUnigramTable();
 	printf("TrainModel Begin\n");
 	TrainModel();
