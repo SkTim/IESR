@@ -1,3 +1,4 @@
 data/*
 vectors/filtVectors.txt.gz
 bin/nohup.out
+vectors/nohup.out

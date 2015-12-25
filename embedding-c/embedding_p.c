@@ -16,8 +16,8 @@ typedef float real;
 int num_threads = 10, lines_num = 0, negative1 = 5, negative2 = 4, group, iter_num;
 long long vocab_size, layer1_size = 1000, pmi_size, esa_size;
 real *syn0, *syn1, *syn2, f, rate, *rate_table1, *rate_table2;
-char lines[500000000][80], train_file[40], output_file1[40], output_file2[40];
-int *vocab, *article, *table;
+char lines[500000000][80], vocab_lines[1000000][40], train_file[40], vocab_file[40], output_file1[40], output_file2[40];
+int *vocab, *sorted_vocab, *article, *table;
 const int table_size = 1e8;
 
 void ReadWord(char *word, FILE *fin) {
@@ -35,21 +35,21 @@ void ReadWord(char *word, FILE *fin) {
 }
 
 void InitUnigramTable() {
-  int a, i;
-  double train_words_pow = 0;
-  double d1, power = 0.75;
-  table = (int *)malloc(table_size * sizeof(int));
-  for (a = 0; a < vocab_size; a++) train_words_pow += pow(vocab[a], power);
-  i = 0;
-  d1 = pow(vocab[i], power) / train_words_pow;
-  for (a = 0; a < table_size; a++) {
-    table[a] = i;
-    if (a / (double)table_size > d1) {
-      i++;
-      d1 += pow(vocab[i], power) / train_words_pow;
+    int a, i;
+    double train_words_pow = 0;
+    double d1, power = 0.75;
+    table = (int *)malloc(table_size * sizeof(int));
+    for (a = 0; a < vocab_size; a++) train_words_pow += pow(vocab[a], power);
+    i = 0;
+    d1 = pow(vocab[sorted_vocab[i]], power) / train_words_pow;
+    for (a = 0; a < table_size; a++) {
+        table[a] = sorted_vocab[i];
+        if (a / (double)table_size > d1) {
+            i++;
+            d1 += pow(vocab[sorted_vocab[i]], power) / train_words_pow;
+        }
+        if (i >= vocab_size) i = vocab_size - 1;
     }
-    if (i >= vocab_size) i = vocab_size - 1;
-  }
 }
 
 void InitVectors() {
@@ -79,9 +79,40 @@ void InitVectors() {
 	for (a = 0; a < num_threads; a++) rate_table1[a] = rate;
 	for (a = 0; a < num_threads; a++) rate_table2[a] = rate;
 	vocab = (int *)calloc(vocab_size, sizeof(int));
+    sorted_vocab = (int *)calloc(vocab_size, sizeof(int));
 	article = (int *)calloc(esa_size, sizeof(int));
 	for (a = 0; a < vocab_size; a++) vocab[a] = 0;
+    for (a = 0; a < vocab_size; a++) sorted_vocab[a] = 0;
 	for (a = 0; a < esa_size; a++) article[a] = 0;
+}
+
+void GetVocab(FILE *fin) {
+    int a = 0, b = 0, n = 0, i, l, line_id;
+    char line[100];
+    real value;
+    while(!feof(fin)) {
+        fgets(line, 100, fin);
+        strcpy(vocab_lines[n], line);
+        n++;
+    }
+    for (l = 1; l < n; l++) {
+        char ch[20] = {}, ch1[20] = {};
+        a = 0;
+        b = 0;
+        for (i = 0; i < strlen(vocab_lines[l]); i++) {
+            if (vocab_lines[l][i] == '\n') break;
+            if (vocab_lines[l][i] == ' ') {
+                a += 1;
+                b = i + 1;
+                continue;
+            }
+            if (a == 0) ch[i] = vocab_lines[l][i];
+            if (a == 1) ch1[i - b] = vocab_lines[l][i];
+        }
+        sorted_vocab[l - 1] = atoi(ch);
+        vocab[sorted_vocab[l - 1]] = atoi(ch1);
+    }
+    InitUnigramTable();
 }
 
 void GetMatrix(FILE *fin) {
@@ -109,30 +140,6 @@ void GetMatrix(FILE *fin) {
 	pmi_size = atoi(ch1);
 	esa_size = atoi(ch2);
 	InitVectors();
-	/*
-	for (l = 0; l < lines_num; l++) {
-		char s1[10] = {}, s2[10] = {}, v[10] = {};
-		a = 0;
-		b = 0;
-		for (i = 1; i < strlen(lines[l]); i++) {
-			if (lines[l][i] == '\n') break;
-			if (lines[l][i] == ' ') {
-				a += 1;
-				b = i + 1;
-				continue;
-			}
-			if (a == 0) s1[i - 1] = lines[l][i];
-			if (a == 1) s2[i - b] = lines[l][i];
-			if (a == 2) v[i - b] = lines[l][i];
-		}
-		line_id = atoi(s1);
-		column_id = atoi(s2);
-		value = atof(v);
-		if (lines[l][0] == 'P') vocab[line_id] += 1;
-		if (lines[l][0] == 'E') article[column_id] += 1;
-	}
-	InitUnigramTable();
-	*/
 	printf("%lld %lld %lld\n", vocab_size, pmi_size, esa_size);
 }
 
@@ -141,7 +148,7 @@ void *COMF(void *id) {
 	real value, g, test, ppmi_num = 0, esa_num = 0, min_rate = rate / 10;
 	real *neu1e = (real *)calloc(layer1_size, sizeof(real));
 	unsigned long long next_random = (long long)id;
-	int t_id = (int)id, start = group * t_id + 1, end;
+	int t_id = (int)id, start = group * t_id + 1, end, target;
 	if ((int)id == num_threads - 1) end = lines_num;
 	else end = start + group;
 	real line_num = (real)(end - start);
@@ -208,8 +215,9 @@ void *COMF(void *id) {
 				f = 0;
 				if (i != 0) {
 					next_random = next_random * (unsigned long long)25214903917 + 11;
-					column_id = (next_random >> 16) % pmi_size;
-					l2 = column_id * layer1_size;
+					target = table[(next_random >> 16) % table_size];
+                    if (column_id == target) continue;
+					l2 = target * layer1_size;
 					value = 0;
 				}
 				for (j = 0; j < layer1_size; j++) {
@@ -267,16 +275,20 @@ void TrainModel() {
 
 void main(int argc, char **argv) {
 	printf("Main Begin\n");
-	FILE *fp;
+	FILE *fp, *f_vocab;
 	strcpy(train_file, "../data/infoMatrix_1");
+    strcpy(vocab_file, "../data/vocab.txt");
 	strcpy(output_file1, "../data/wordVectors_1");
 	strcpy(output_file2, "../data/articleVectors_1");
-	fp = fopen(train_file,"r");
+	fp = fopen(train_file, "r");
+    f_vocab = fopen(vocab_file, "r");
 	layer1_size = 1000;
-	rate = 0.005;
-	iter_num = 6;
+	rate = 0.004;
+	iter_num = 5;
 	printf("GetMatrix Begin\n");
 	GetMatrix(fp);
+    printf("GetVocab Begin\n");
+    GetVocab(f_vocab);
 	printf("TrainModel Begin\n");
 	TrainModel();
 }
