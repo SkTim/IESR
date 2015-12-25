@@ -35,21 +35,21 @@ void ReadWord(char *word, FILE *fin) {
 }
 
 void InitUnigramTable() {
-  int a, i;
-  double train_words_pow = 0;
-  double d1, power = 0.75;
-  table = (int *)malloc(table_size * sizeof(int));
-  for (a = 0; a < vocab_size; a++) train_words_pow += pow(vocab[a], power);
-  i = 0;
-  d1 = pow(vocab[sorted_vocab[i]], power) / train_words_pow;
-  for (a = 0; a < table_size; a++) {
-    table[a] = sorted_vocab[i];
-    if (a / (double)table_size > d1) {
-      i++;
-      d1 += pow(vocab[sorted_vocab[i]], power) / train_words_pow;
+    int a, i;
+    double train_words_pow = 0;
+    double d1, power = 0.75;
+    table = (int *)malloc(table_size * sizeof(int));
+    for (a = 0; a < vocab_size; a++) train_words_pow += pow(vocab[a], power);
+    i = 0;
+    d1 = pow(vocab[sorted_vocab[i]], power) / train_words_pow;
+    for (a = 0; a < table_size; a++) {
+        table[a] = sorted_vocab[i];
+        if (a / (double)table_size > d1) {
+            i++;
+            d1 += pow(vocab[sorted_vocab[i]], power) / train_words_pow;
+        }
+        if (i >= vocab_size) i = vocab_size - 1;
     }
-    if (i >= vocab_size) i = vocab_size - 1;
-  }
 }
 
 void InitVectors() {
