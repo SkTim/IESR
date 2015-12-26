@@ -15,7 +15,7 @@ typedef float real;
 
 int num_threads = 8, lines_num = 0, negative1 = 15, negative2 = 18, group, iter_num;
 long long vocab_size, layer1_size = 1000, pmi_size, esa_size;
-real *syn0, *syn1, *syn2, f, rate, *rate_table1, *rate_table2;
+real rho = 0.95, eta = 1e-6, *syn0, *syn1, *syn2, f, rate, *rate_table1, *rate_table2, *s_vocab, *s_article, *v_vocab, *v_article;
 char lines[500000000][80], vocab_lines[1000000][40], article_lines[200000][40];
 char train_file[40], vocab_file[40], article_file[40], output_file1[40], output_file2[40];
 int *vocab, *sorted_vocab, *article, *sorted_article, *vocab_table, *article_table;
@@ -99,6 +99,14 @@ void InitVectors() {
     for (a = 0; a < vocab_size; a++) sorted_vocab[a] = 0;
 	for (a = 0; a < esa_size; a++) article[a] = 0;
     for (a = 0; a < esa_size; a++) sorted_article[a] = 0;
+    s_vocab = (real *)calloc(vocab_size, sizeof(real));
+    v_vocab = (real *)calloc(vocab_size, sizeof(real));
+    s_article = (real *)calloc(esa_size, sizeof(real));
+    v_article = (real *)calloc(esa_size, sizeof(real));
+    for (a = 0; a < vocab_size; a++) s_vocab[a] = 0;
+    for (a = 0; a < vocab_size; a++) v_vocab[a] = 0;
+    for (a = 0; a < esa_size; a++) s_article[a] = 0;
+    for (a = 0; a < esa_size; a++) v_article[a] = 0;
 }
 
 void GetVocab(FILE *fin) {
@@ -187,7 +195,7 @@ void GetMatrix(FILE *fin) {
 
 void *COMF(void *id) {
 	int a = 0, b = 0, matrix_id = 0, l, i, j, line_id, column_id, iter = 0, l1, l2, p_num, e_num;
-	real value, g, test, ppmi_num = 0, esa_num = 0, min_rate = rate / 10;
+	real value, g, g1, g2, test, ppmi_num = 0, esa_num = 0, min_rate = rate / 10;
 	real *neu1e = (real *)calloc(layer1_size, sizeof(real));
 	unsigned long long next_random = (long long)id;
 	int t_id = (int)id, start = group * t_id + 1, end, target;
@@ -262,13 +270,23 @@ void *COMF(void *id) {
 					l2 = target * layer1_size;
 					value = 0;
 				}
+                else target = column_id;
 				for (j = 0; j < layer1_size; j++) {
 					f += syn0[j + l1] * syn0[j + l2];
 				}
-				g = rate_table1[t_id] * (value - f);
+				//g = rate_table1[t_id] * (value - f);
+                g = value - f;
 				for (j = 0; j < layer1_size; j++) {
-					neu1e[j] += g * syn0[j + l2];
-					syn0[j + l2] += g * syn0[j + l1];
+                    g1 = g * syn0[j + l2];
+                    g2 = g * syn0[j + l1];
+                    v_vocab[line_id] = 0.95 * v_vocab[line_id] + 0.05 * g1 * g1;
+                    v_vocab[target] = 0.95 * v_vocab[target] + 0.05 * g2 * g2;
+                    g1 *= sqrt((s_vocab[line_id] + eta) / (v_vocab[line_id] + eta));
+                    g2 *= sqrt((s_vocab[target] + eta) / (v_vocab[target] + eta));
+                    s_vocab[line_id] = 0.95 * s_vocab[line_id] + 0.05 * g1 * g1;
+                    s_vocab[target] = 0.95 * s_vocab[target] + 0.05 * g2 * g2;
+					neu1e[j] += g1;
+					syn0[j + l2] += g2;
 				}
 			}
 			if (matrix_id == 1) for (i = 0 ; i < negative2 + 1; i++) {
@@ -280,13 +298,23 @@ void *COMF(void *id) {
 					l2 = target * layer1_size;
 					value = 0;
 				}
+                else target = column_id;
 				for (j = 0; j < layer1_size; j++) {
 					f += syn0[j + l1] * syn2[j + l2];
 				}
-				g = rate_table2[t_id] * (value - f);
+				//g = rate_table2[t_id] * (value - f);
+                g = value - f;
 				for (j = 0; j < layer1_size; j++) {
-					neu1e[j] += g * syn2[j + l2];
-					syn2[j + l2] += g * syn0[j + l1];
+                    g1 = g * syn2[j + l2];
+                    g2 = g * syn0[j + l1];
+                    v_vocab[line_id] = 0.95 * v_vocab[line_id] + 0.05 * g1 * g1;
+                    v_article[target] = 0.95 * v_article[target] + 0.05 * g2 * g2;
+                    g1 *= sqrt((s_vocab[line_id] + eta) / (v_vocab[line_id] + eta));
+                    g2 *= sqrt((s_article[target] + eta) / (v_article[target] + eta));
+                    s_vocab[line_id] = 0.95 * s_vocab[line_id] + 0.05 * g1 * g1;
+                    s_article[target] = 0.95 * s_article[target] + 0.05 * g2 * g2;
+					neu1e[j] += g1;
+					syn2[j + l2] += g2;
 				}
 			}
 			for (i = 0; i < layer1_size; i++) {
