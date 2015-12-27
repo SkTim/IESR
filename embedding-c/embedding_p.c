@@ -329,7 +329,7 @@ void main(int argc, char **argv) {
     f_article = fopen(article_file, "r");
 	layer1_size = 1000;
 	rate = 0.004;
-	iter_num = 8;
+	iter_num = 9;
 	printf("GetMatrix Begin\n");
 	GetMatrix(fp);
     printf("GetVocab Begin\n");
