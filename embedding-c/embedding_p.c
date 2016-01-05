@@ -13,7 +13,7 @@
 
 typedef float real;
 
-int num_threads = 8, lines_num = 0, negative1 = 15, negative2 = 18, group, iter_num;
+int num_threads = 8, lines_num = 0, negative1 = 14, negative2 = 18, group, iter_num;
 long long vocab_size, layer1_size = 1000, pmi_size, esa_size;
 real *syn0, *syn1, *syn2, f, rate, *rate_table1, *rate_table2;
 char lines[500000000][80], vocab_lines[1000000][40], article_lines[200000][40];
@@ -85,7 +85,7 @@ void InitVectors() {
 	}
     for (a = 0; a < vocab_size; a++) for (b = 0; b < layer1_size; b++) {
     	next_random = next_random * (unsigned long long)25214903917 + 11;
-    	syn0[a * layer1_size + b] = 10 * (((next_random & 0xFFFF) / (real)65536) - 0.5) / ((float)(layer1_size));
+    	syn0[a * layer1_size + b] = (((next_random & 0xFFFF) / (real)65536) - 0.5) / ((float)(layer1_size));
 	}
 	rate_table1 = (real *)calloc(num_threads, sizeof(real));
 	rate_table2 = (real *)calloc(num_threads, sizeof(real));
@@ -205,8 +205,6 @@ void *COMF(void *id) {
 	p_num = 0;
 	e_num = 0;
 	while (iter < iter_num) {
-		//p_num = 0;
-		//e_num = 0;
 		for (l = start; l < end; l++) {
 			
 			/*
@@ -265,7 +263,7 @@ void *COMF(void *id) {
 				for (j = 0; j < layer1_size; j++) {
 					f += syn0[j + l1] * syn0[j + l2];
 				}
-				g = rate_table1[t_id] * (value - f);
+				g = rate_table1[t_id] * (value / 10 - f);
 				for (j = 0; j < layer1_size; j++) {
 					neu1e[j] += g * syn0[j + l2];
 					syn0[j + l2] += g * syn0[j + l1];
@@ -302,7 +300,7 @@ void *COMF(void *id) {
 
 void TrainModel() {
 	int a, b;
-	FILE *fo;
+	FILE *fo, *fo_articles;
 	group = (int)((lines_num - 1) / num_threads);
 	pthread_t *pt = (pthread_t *)malloc(num_threads * sizeof(pthread_t));
 	for (a = 0; a < num_threads; a++) pthread_create(&pt[a], NULL, COMF, (void *)a);
@@ -314,6 +312,13 @@ void TrainModel() {
     	fprintf(fo, "\n");
     }
 	fclose(fo);
+	fo_articles = fopen(output_file2, "wb");
+	fprintf(fo_articles, "%lld %lld\n", esa_size, layer1_size);
+	for (a = 0; a < esa_size; a++) {
+		for (b = 0; b < layer1_size; b++) fprintf(fo_articles, "%f ", syn2[a * layer1_size + b]);
+		fprintf(fo_articles, "\n");
+	}
+	fclose(fo_articles);
 }
 
 void main(int argc, char **argv) {
@@ -328,8 +333,8 @@ void main(int argc, char **argv) {
     f_vocab = fopen(vocab_file, "r");
     f_article = fopen(article_file, "r");
 	layer1_size = 1000;
-	rate = 0.004;
-	iter_num = 9;
+	rate = 0.05;
+	iter_num = 8;
 	printf("GetMatrix Begin\n");
 	GetMatrix(fp);
     printf("GetVocab Begin\n");

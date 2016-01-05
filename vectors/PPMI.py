@@ -44,7 +44,7 @@ class Matrix():
     def getIndexDict(self):
         self.wordList = self.worddict.keys()
         self.N = len(self.wordList)
-        cPickle.dump(self.wordList,open("../data/wordList8_parsed_1",'wb'))
+        cPickle.dump(self.wordList,open("../data/wordList8_parsed",'wb'))
 
     def getInfoMatrix(self):
         self.infoMatrix = map((lambda x:{}),self.wordList)

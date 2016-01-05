@@ -1,7 +1,7 @@
 #lhy
 #2015.5
 
-python filterVocab.py fullVocab.txt < ../data/text8.txt > filtVectors.txt
+python filterVocab.py fullVocab.txt < ../data/text8_ESA_wordsim353.txt > filtVectors.txt
 gzip filtVectors.txt filtVectors.txt.gz
 cp filtVectors.txt.gz ../../eval-vectors/
 cd ../../eval-vectors/
