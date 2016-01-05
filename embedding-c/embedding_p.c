@@ -283,8 +283,8 @@ void main(int argc, char **argv) {
 	fp = fopen(train_file, "r");
     f_vocab = fopen(vocab_file, "r");
 	layer1_size = 1000;
-	rate = 0.004;
-	iter_num = 5;
+	rate = 0.005;
+	iter_num = 8;
 	printf("GetMatrix Begin\n");
 	GetMatrix(fp);
     printf("GetVocab Begin\n");

@@ -24,7 +24,6 @@ class Matrix():
         self.words = self.in_data.split(' ')
 	del self.in_data
         self.words = self.words[1:]
-        #self.wordlist = cPickle.load(open("../data/wordList_wiki",'rb'))
         self.worddict = {}
 	#wordSet = set(self.wordlist)
         for word in self.words:
@@ -45,7 +44,7 @@ class Matrix():
     def getIndexDict(self):
         self.wordList = self.worddict.keys()
         self.N = len(self.wordList)
-        cPickle.dump(self.wordList,open("../data/wordList8_parsed",'wb'))
+        cPickle.dump(self.wordList,open("../data/wordList_parsed",'wb'))
 
     def getInfoMatrix(self):
         self.infoMatrix = map((lambda x:{}),self.wordList)
@@ -55,6 +54,11 @@ class Matrix():
 	#    index1[self.wordlist[i]] = i
         for i in range(len(self.wordList)):
             index2[self.wordList[i]] = i
+        l = sorted(self.worddict.iteritems(),key = lambda x:x[1],reverse = True)
+        outHandle = open("../data/vocabs.txt",'w')
+        outHandle.write("%d\n" % len(l))
+        outHandle.write('\n'.join(map((lambda x:"%d %d" % (index2[x[0]],x[1])),l)))
+        outHandle.close()
         for i in range(len(self.words)):
             if self.words[i] not in index2:
                 continue

@@ -4,7 +4,7 @@
 import cPickle
 import PPMI
 
-m = PPMI.Matrix(5,"../data/text8")
+m = PPMI.Matrix(5,"../data/enwiki.txt")
 m.getDict()
 print "getDict ok"
 
@@ -17,7 +17,7 @@ print "getInfoMatrix ok"
 m.PPMI()
 print "PPMI ok"
 
-m.writeMatrix("../data/infoMatrix_8")
+m.writeMatrix("../data/infoMatrix")
 print "WriteMatrix ok"
 
 #index = m.nmf(400,4)
