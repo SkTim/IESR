@@ -3,9 +3,9 @@
 
 import cPickle
 
-wordList = cPickle.load(open("../data/wordList_parsed",'rb'))
+wordList = cPickle.load(open("../data/wordList_ESA",'rb'))
 wordList = map((lambda x:x.strip('\n')),wordList)
-inHandle = open(r'../data/wordVectors_1')
+inHandle = open(r'../data/wordVectors_8')
 in_list = inHandle.readlines()
 outHandle = open("../data/text8.txt",'w')
 for (i,line) in enumerate(in_list):

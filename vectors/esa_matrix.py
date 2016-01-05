@@ -40,8 +40,8 @@ articles = map((lambda x:x.strip('\n')),in_list)
 for i in range(len(articles)):
     articleDict[articles[i]] = i
 
-outHandle = open("ESA_MATRIX.txt",'w')
-outHandle.write("%d %d\n" % (len(wordList),171332))
+outHandle = open("../data/ESA_MATRIX.txt",'w')
+outHandle.write("%d %d %d\n" % (len(wordList),len(wordList),171332))
 text = ''.join(map(get_vector,wordList))
 outHandle.write(text)
 
